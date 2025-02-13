@@ -1,6 +1,10 @@
 from typing import OrderedDict
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, HTTPException
+#from app.models import Book  # Import the Book model (adjust if necessary)
+from api.db import get_db  # Adjust according to the project structure
+from sqlalchemy.orm import Session
+from fastapi import Depends
 from fastapi.responses import JSONResponse
 
 from api.db.schemas import Book, Genre, InMemoryDB
@@ -41,11 +45,19 @@ async def create_book(book: Book):
     )
 
 
-@router.get(
-    "/", response_model=OrderedDict[int, Book], status_code=status.HTTP_200_OK
-)
-async def get_books() -> OrderedDict[int, Book]:
-    return db.get_books()
+# @router.get(
+#     "/", response_model=OrderedDict[int, Book], status_code=status.HTTP_200_OK
+# )
+# async def get_books() -> OrderedDict[int, Book]:
+#     return db.get_books()
+
+
+@router.get("/api/v1/books/{book_id}")
+def get_book(book_id: int, db: Session = Depends(get_db)):
+    book = db.query(Book).filter(Book.id == book_id).first()
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    return book
 
 
 @router.put("/{book_id}", response_model=Book, status_code=status.HTTP_200_OK)
